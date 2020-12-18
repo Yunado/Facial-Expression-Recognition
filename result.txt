@@ -1,1 +1,0 @@
-kNN five labels facial landmakrs: The best validation score is 0.5178970917225951 with k = 11, and its accuracy on the test data is 0.5033557046979866.

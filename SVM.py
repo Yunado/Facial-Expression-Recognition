@@ -1,18 +1,22 @@
 from sklearn.svm import SVC
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
+from sklearn.multiclass import OneVsRestClassifier
 from Load_Data import *
 
 
-def svm_model(label_size, method_type):
-    X_train, Y_train, X_validate, Y_validate, X_test, Y_test = load_data(label_size, method_type)
+def svm_model(method_type):
+    X_train, Y_train, X_validate, Y_validate, X_test, Y_test = load_data(method_type)
 
     # defining parameter range
-    param_grid = {'C': [0.1, 1, 10, 100, 1000],
-                  'gamma': [10, 1, 0.1, 0.01, 0.001, 0.0001],
-                  'kernel': ['rbf']}
+    parameters = {
+        "estimator__C": [1, 10, 100, 1000],
+        'estimator__gamma': [10, 1, 0.01, 0.001],
+        "estimator__kernel": ["rbf"]}
 
-    grid = GridSearchCV(SVC(), param_grid, refit=True, verbose=3)
+    model_to_set = OneVsRestClassifier(SVC())
+
+    grid = GridSearchCV(model_to_set, parameters, refit=True, verbose=3)
 
     # fitting the model for grid search
     grid.fit(X_train, Y_train)
@@ -25,11 +29,21 @@ def svm_model(label_size, method_type):
 
     grid_predictions = grid.predict(X_test)
 
-    print(grid_predictions)
+    if method_type == 0:
+        print("SVM classification report. Gradient")
+    elif method_type == 1:
+        print("SVM classification report. Edge")
+    elif method_type == 2:
+        print("SVM classification report. HoG")
+    elif method_type == 3:
+        print("SVM classification report. Facial Landmarks")
 
     # print classification report
     print(classification_report(Y_test, grid_predictions))
 
 
 if __name__ == "__main__":
-    svm_model(0, 0)
+    svm_model(0)
+    # svm_model(1)
+    # svm_model(2)
+    # svm_model(3)

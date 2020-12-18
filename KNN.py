@@ -2,14 +2,14 @@ from Load_Data import *
 from sklearn.neighbors import KNeighborsClassifier
 
 
-def select_knn_model(label_size, method_type):
-    X_train, Y_train, X_validate, Y_validate, X_test, Y_test = load_data(label_size, method_type)
+def select_knn_model(method_type):
+    X_train, Y_train, X_validate, Y_validate, X_test, Y_test = load_data(method_type)
 
     best_k = -1
     best_score = 0.0
     train_error = []
     validation_error = []
-    k_range = range(1, 51)
+    k_range = range(1, 31)
 
     for k in k_range:
         knn = KNeighborsClassifier(n_neighbors=k)
@@ -36,20 +36,19 @@ def select_knn_model(label_size, method_type):
     plt.xlabel("K number of nearest neighbours")
     plt.ylabel("training/validation accuracy")
     plt.legend(["training accuracy", "validation accuracy"])
-    if label_size == 0 and method_type == 0:
-        plt.title("KNN accuracy with 5 labels. HoG")
-    elif label_size == 0 and method_type == 1:
-        plt.title("KNN accuracy with 5 labels. Facial Landmarks")
-    elif label_size == 1 and method_type == 0:
-        plt.title("KNN accuracy with 3 labels: happiness, neutral, anger. HoG.")
-    else:   # label_size == 1 method type == 1
-        plt.title("KNN accuracy with 3 labels: happiness, neutral, anger. Facial Landmarks.")
+    if method_type == 0:
+        plt.title("KNN accuracy. Gradient")
+    elif method_type == 1:
+        plt.title("KNN accuracy. Edge")
+    elif method_type == 2:
+        plt.title("KNN accuracy. HoG")
+    elif method_type == 3:
+        plt.title("KNN accuracy. Facial Landmarks")
     plt.show()
 
 
 if __name__ == "__main__":
-    select_knn_model(0, 0)
-    # select_knn_model(0, 1)
-    # select_knn_model(1, 0)
-    # select_knn_model(1, 1)
-
+    select_knn_model(0)
+    # select_knn_model(1)
+    # select_knn_model(2)
+    # select_knn_model(3)

@@ -2,7 +2,6 @@ from sklearn.model_selection import train_test_split
 from imutils import face_utils
 import matplotlib.pyplot as plt
 import numpy as np
-import numba as nb
 import cv2
 import dlib
 
@@ -84,8 +83,8 @@ def facial_landmark(image):
         shape = face_utils.shape_to_np(shape)
         landmarks = shape
 
-        for (x, y) in shape:
-            cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
+        # for (x, y) in shape:
+        #     cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
 
     # plt.imshow(image)
     # plt.show()
@@ -93,14 +92,20 @@ def facial_landmark(image):
     return landmarks
 
 
-def facial_feature_difference(facial_feature, default_feature):
-    feature_euclidean_norm = np.linalg.norm(default_feature - facial_feature)
-    return feature_euclidean_norm
+def gradientMagnitude(image_face):
+    """Compute the magnitude of gradients of an image."""
+    g_x = cv2.Sobel(image_face, cv2.CV_64F, 1, 0, ksize=3)
+    g_y = cv2.Sobel(image_face, cv2.CV_64F, 0, 1, ksize=3)
+    g = np.sqrt(np.square(g_x) + np.square(g_y))
+    return g
+
+
+def edge_detect(image_face):
+    edge = cv2.Canny(image_face, 100, 200)
+    return edge
 
 
 def hog(image_face):
-    if image_face.shape[0] == 0 or image_face.shape[1] == 0:
-        return 0
     winSize = (32, 32)
     blockSize = (16, 16)
     blockStride = (8, 8)
@@ -111,11 +116,9 @@ def hog(image_face):
     return h
 
 
-def hog_face_diff(image_loc, default_hog):
-    img_face = cv2.imread(image_loc)
-    image_face_hog = hog(img_face[50:300, 50:300])
-    hog_diff_euclidean_norm = np.linalg.norm(default_hog - image_face_hog)
-    return hog_diff_euclidean_norm
+def diff(img_g, default):
+    diff_euclidean_norm = np.linalg.norm(default - img_g)
+    return diff_euclidean_norm
 
 
 def load_data_label():
@@ -128,7 +131,7 @@ def load_data_label():
     filtered_arr = []
 
     for i in data_arr:
-        if i[2] == "happiness" or i[2] == "neutral" or i[2] == "anger" or i[2] == "sadness" or i[2] == "fear":
+        if i[2] == "happiness" or i[2] == "neutral" or i[2] == "anger" or i[2] == "sadness":
             filtered_arr.append(i)
 
     filtered_arr = np.array(filtered_arr)
@@ -136,34 +139,17 @@ def load_data_label():
     return filtered_arr
 
 
-def load_data_label_3_label():
-    """Loads the data and the corresponding label from the csv file. Only keep label happiness, neutral, and anger"""
-    with open("image_labels.csv") as f:
-        lines = [line.split() for line in f]  # create a list of lists
-
-    lines.pop(0)
-    data_arr = np.char.split(lines, sep=',').flatten()
-    filtered_arr = []
-
-    for i in data_arr:
-        if i[2] == "happiness" or i[2] == "neutral" or i[2] == "anger":
-            filtered_arr.append(i)
-
-    filtered_arr = np.array(filtered_arr)
-    return filtered_arr
-
-
-def load_data(choice_label_size, choice_input_method):
+def load_data(choice_input_method):
     """Loads the gray scale image data and then split the entire database randomly
     into 75% train, 15% validation, 15% test"""
     Default_Face = cv2.imread('og/Spencer_Abraham_0003.jpg')
-    Default_Face_Hog = hog(Default_Face[50:300, 50:300])
+    Default_Face = Default_Face[50:300, 50:300]
+    Default_Face_g = gradientMagnitude(Default_Face)
+    Default_Face_edge = edge_detect(Default_Face)
+    Default_Face_Hog = hog(Default_Face)
     Default_Facial_Feature = facial_landmark(Default_Face)
 
-    if choice_label_size == 0:
-        data_label = load_data_label()
-    else:  # filtered data to 3 labels
-        data_label = load_data_label_3_label()
+    data_label = load_data_label()
 
     data = []
     labels = []
@@ -172,19 +158,36 @@ def load_data(choice_label_size, choice_input_method):
     for i in data_label:
         print("at data og/" + str(i[1]))
 
-        if (i[2] == 'happiness' and label_count[1] >= 250) or (i[2] == 'neutral' and label_count[2] >= 250):
-            continue
-        if i[2] == 'fear':
-            continue
+        img_face = cv2.imread("og/" + str(i[1]))
 
-        if choice_input_method == 0:
-            data.append([hog_face_diff("og/" + str(i[1]), Default_Face_Hog)])
-        else:  # use facial landmark difference
-            img_face = cv2.imread("og/" + str(i[1]))
+        if choice_input_method == 0:  # Gradient
+            img_face_g = gradientMagnitude(img_face[50:300, 50:300])
+            data.append([diff(img_face_g, Default_Face_g)])
+            if i[2] == 'sadness':
+                img_face_g = gradientMagnitude(cv2.flip(img_face, 1)[50:300, 50:300])
+                data.append([diff(img_face_g, Default_Face_g)])
+        elif choice_input_method == 1:  # Edge
+            image_edge = edge_detect(img_face[50:300, 50:300])
+            data.append([diff(image_edge, Default_Face_edge)])
+            if i[2] == 'sadness':
+                image_edge = edge_detect(cv2.flip(img_face, 1)[50:300, 50:300])
+                data.append([diff(image_edge, Default_Face_edge)])
+        elif choice_input_method == 2:  # HoG
+            image_HoG = hog(img_face[50:300, 50:300])
+            data.append([diff(image_HoG, Default_Face_Hog)])
+            if i[2] == 'sadness':
+                image_HoG = hog(cv2.flip(img_face, 1)[50:300, 50:300])
+                data.append([diff(image_HoG, Default_Face_Hog)])
+        else:   # Facial LandMark
             facial_feature = facial_landmark(img_face)
             if facial_feature is None:
                 continue
-            data.append([facial_feature_difference(facial_feature, Default_Facial_Feature)])
+            data.append([diff(facial_feature, Default_Facial_Feature)])
+            if i[2] == 'sadness':
+                facial_feature = facial_landmark(cv2.flip(img_face, 1))
+                if facial_feature is None:
+                    continue
+                data.append([diff(facial_feature, Default_Facial_Feature)])
         if i[2] == 'fear':
             label_count[0] += 1
             labels.append(0)
@@ -200,8 +203,12 @@ def load_data(choice_label_size, choice_input_method):
         if i[2] == 'sadness':
             label_count[4] += 1
             labels.append(4)
-    print("label counts: fear: " + str(label_count[0]) + ";\nhappiness: " + str(label_count[1]) +
-          ";\nneutral: " + str(label_count[2]) + ";\nanger: " + str(label_count[3]) + ";\nsadness: " + str(label_count[4]))
+
+            label_count[4] += 1
+            labels.append(4)
+
+    print("label counts: happiness: " + str(label_count[1]) + ";\nneutral: " + str(label_count[2]) +
+          ";\nanger: " + str(label_count[3]) + ";\nsadness: " + str(label_count[4]))
 
     data = np.array(data)
     labels = np.array(labels)
@@ -212,3 +219,17 @@ def load_data(choice_label_size, choice_input_method):
                                                               shuffle=True, stratify=Y_test)
 
     return X_train, Y_train, X_validate, Y_validate, X_test, Y_test
+
+
+if __name__ == "__main__":
+    img = cv2.imread("og/Spencer_Abraham_0003.jpg")
+    plt.imshow(img)
+    plt.show()
+
+    img = cv2.GaussianBlur(img, (5, 5), 2)
+    plt.imshow(img)
+    plt.show()
+
+    img = cv2.flip(img, 1)
+    plt.imshow(img)
+    plt.show()
