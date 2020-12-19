@@ -43,7 +43,7 @@ def svm_model(method_type):
 
 
 if __name__ == "__main__":
-    svm_model(0)
-    # svm_model(1)
+    # svm_model(0)
+    svm_model(1)
     # svm_model(2)
     # svm_model(3)

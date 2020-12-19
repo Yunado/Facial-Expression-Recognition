@@ -9,7 +9,7 @@ def select_knn_model(method_type):
     best_score = 0.0
     train_error = []
     validation_error = []
-    k_range = range(1, 31)
+    k_range = range(1, 51)
 
     for k in k_range:
         knn = KNeighborsClassifier(n_neighbors=k)

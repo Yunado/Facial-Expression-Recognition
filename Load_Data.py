@@ -20,7 +20,6 @@ nose_cascade.load('haarcascades/haarcascade_mcs_nose.xml')
 
 
 def face_detect(img):
-    # face
     faces = face_cascade.detectMultiScale(img, 1.2, 3)
     facial_landmark = np.zeros((5,))
     if len(faces) >= 1:
@@ -83,12 +82,6 @@ def facial_landmark(image):
         shape = face_utils.shape_to_np(shape)
         landmarks = shape
 
-        # for (x, y) in shape:
-        #     cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
-
-    # plt.imshow(image)
-    # plt.show()
-
     return landmarks
 
 
@@ -101,7 +94,7 @@ def gradientMagnitude(image_face):
 
 
 def edge_detect(image_face):
-    edge = cv2.Canny(image_face, 100, 200)
+    edge = cv2.Canny(image_face, 100, 100)
     return edge
 
 
@@ -185,9 +178,14 @@ def load_data(choice_input_method):
             data.append([diff(facial_feature, Default_Facial_Feature)])
             if i[2] == 'sadness':
                 facial_feature = facial_landmark(cv2.flip(img_face, 1))
+                label_count[4] += 1
+                labels.append(4)
                 if facial_feature is None:
                     continue
                 data.append([diff(facial_feature, Default_Facial_Feature)])
+                label_count[4] += 1
+                labels.append(4)
+                continue
         if i[2] == 'fear':
             label_count[0] += 1
             labels.append(0)
@@ -226,10 +224,15 @@ if __name__ == "__main__":
     plt.imshow(img)
     plt.show()
 
-    img = cv2.GaussianBlur(img, (5, 5), 2)
-    plt.imshow(img)
+    plt.imshow(gradientMagnitude(img).astype(np.uint8), cmap='gray')
     plt.show()
 
-    img = cv2.flip(img, 1)
+    plt.imshow(edge_detect(img), cmap='gray')
+    plt.show()
+
+    feature = facial_landmark(img)
+    for (x, y) in feature:
+        cv2.circle(img, (x, y), 2, (0, 255, 0), -1)
+
     plt.imshow(img)
     plt.show()
