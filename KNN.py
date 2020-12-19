@@ -48,6 +48,7 @@ def select_knn_model(method_type):
 
 
 if __name__ == "__main__":
+    # 0 uses Gradient, 1 uses Edge, 2 uses HoG and 3 uses Facial Landmarks.
     select_knn_model(0)
     # select_knn_model(1)
     # select_knn_model(2)
